@@ -133,7 +133,9 @@ public class TestExecutionService {
             XWPFRun infoRun = info.createRun();
             infoRun.setText("Status: " + status);
             infoRun.addBreak();
-            infoRun.setText("Timestamp: " + LocalDateTime.now());
+            String timestamp = LocalDateTime.now()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            infoRun.setText("Timestamp: " + timestamp);
             infoRun.addBreak();
 
             if (screenshot != null && screenshot.length > 0) {
@@ -147,8 +149,21 @@ public class TestExecutionService {
                         Units.toEMU(300));
             }
 
-            try (FileOutputStream out = new FileOutputStream(testName + "_report.docx")) {
+            // Create reports directory if it doesn't exist
+            java.nio.file.Path reportsDir = java.nio.file.Paths.get("reports");
+            if (!java.nio.file.Files.exists(reportsDir)) {
+                java.nio.file.Files.createDirectories(reportsDir);
+            }
+
+            // Generate timestamped filename: testName_yyyyMMdd_HHmmss.docx
+            String fileTimestamp = LocalDateTime.now()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            String fileName = testName + "_" + fileTimestamp + ".docx";
+            java.nio.file.Path filePath = reportsDir.resolve(fileName);
+
+            try (FileOutputStream out = new FileOutputStream(filePath.toFile())) {
                 document.write(out);
+                System.out.println("Report generated: " + filePath.toAbsolutePath());
             }
         } catch (Exception e) {
             System.err.println("Failed to generate report: " + e.getMessage());
