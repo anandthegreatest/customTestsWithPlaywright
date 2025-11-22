@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Automation Dashboard</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <h1>Test Automation Dashboard</h1>
+    </header>
+
+    <main>
+        <div class="controls">
+            <button onclick="runTest('google-search')">Run Google Search Test</button>
+            <button onclick="runTest('example-test')">Run Example Test</button>
+            <button class="secondary" onclick="clearResults()">Clear Results</button>
+        </div>
+
+        <div id="test-grid" class="test-grid">
+            <!-- Tests will be populated here via JS or Thymeleaf initial load -->
+            <div th:each="test : ${tests}" class="test-card">
+                <span th:class="'status-badge status-' + ${test.status}" th:text="${test.status}">STATUS</span>
+                <div class="test-name" th:text="${test.testName}">Test Name</div>
+                <div class="test-message" th:text="${test.message}">Message</div>
+                <div class="timestamp" th:text="${test.timestamp}">Time</div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function runTest(testName) {
+            fetch('/run-test?testName=' + testName, { method: 'POST' })
+                .then(response => console.log('Test started'));
+        }
+        
+        function clearResults() {
+            fetch('/api/clear', { method: 'POST' })
+                .then(() => updateStatus());
+        }
+
+        function updateStatus() {
+            fetch('/api/status')
+                .then(response => response.json())
+                .then(data => {
+                    const grid = document.getElementById('test-grid');
+                    grid.innerHTML = '';
+                    data.forEach(test => {
+                        const card = document.createElement('div');
+                        card.className = 'test-card';
+                        card.innerHTML = `
+                            <span class="status-badge status-${test.status}">${test.status}</span>
+                            <div class="test-name">${test.testName}</div>
+                            <div class="test-message">${test.message}</div>
+                            <div class="timestamp">${test.timestamp}</div>
+                        `;
+                        grid.appendChild(card);
+                    });
+                });
+        }
+
+        // Poll every 2 seconds
+        setInterval(updateStatus, 2000);
+    </script>
+</body>
+</html>
